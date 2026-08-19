@@ -4,11 +4,13 @@ import com.abeltiago.tinyledger.errors.InsufficientFundsException;
 import com.abeltiago.tinyledger.errors.InvalidAmountException;
 import com.abeltiago.tinyledger.transaction.Transaction;
 import com.abeltiago.tinyledger.transaction.TransactionType;
+import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+@Service
 public class LedgerService {
 
     private final List<Transaction> transactionHistory = new ArrayList<>();

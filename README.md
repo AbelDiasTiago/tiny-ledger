@@ -24,4 +24,53 @@ database, no UI, by design (see assumptions).
 - **In-memory only.** Data lives for the lifetime of the process, per the
   assignment's own suggestion.
 
-*Run instructions and API examples will land with the endpoints.*
+## How to run
+
+Requires Java 21 or newer. The Maven wrapper handles Maven itself.
+
+    ./mvnw spring-boot:run
+
+The API starts on http://localhost:8080. Run the tests with `./mvnw test`.
+
+## API
+
+### Record a transaction
+
+    curl -i localhost:8080/transactions -H "Content-Type: application/json" \
+      -d '{"type":"DEPOSIT","amountCents":500}'
+
+Returns 201 Created with the recorded fact:
+
+    {"id":1,"type":"DEPOSIT","amountCents":500,"timestamp":"2026-08-19T09:12:31.286490Z"}
+
+A zero or negative amount, or a missing type, returns 400 with a message.
+A withdrawal above the current balance returns 409:
+
+    {"message":"Transaction amount surpasses available balance."}
+
+### View balance
+
+    curl -i localhost:8080/balance
+
+    {"balanceCents":500}
+
+### View transaction history
+
+    curl -i localhost:8080/transactions
+
+Returns the full append-only history, oldest first.
+
+## What was cut and why
+
+- Authentication and monitoring: excluded by the assignment itself.
+- Persistence: in memory by design.
+  The service is the seam: swapping the list for a repository would leave
+  the API untouched.
+- Concurrency beyond coarse locking: every operation is synchronized, so
+  each check and append is atomic.
+  Real scale would need a per-account locking or a single writer queue.
+- Idempotency: retrying a POST records a new transaction.
+  Production would accept a client supplied idempotency key.
+- Integration tests: the domain rules are unit tested, and every endpoint
+  was exercised end to end by hand.
+  A MockMvc happy path test would be the next test to write.

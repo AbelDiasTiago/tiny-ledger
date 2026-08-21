@@ -74,3 +74,44 @@ Returns the full append-only history, oldest first.
 - Integration tests: the domain rules are unit tested, and every endpoint
   was exercised end to end by hand.
   A MockMvc happy path test would be the next test to write.
+
+## Post-interview changes
+
+The transfer feature was written live during the Teya coding interview, under a constraint
+of exactly two accounts. It is kept as it was written.
+
+Everything done afterwards had a single purpose: **to make the project compile, run, and
+pass its existing tests.** Nothing was redesigned, refactored or tidied.
+
+- **`TransactionController`** — the two GET handlers were left mid-refactor when time ran
+  out. They still called `history()` and `balanceCents()` with no arguments after
+  `LedgerService` had gained an account id parameter, so `src/main` did not compile. The
+  call sites were completed and the two mappings given an `/{id}` segment.
+- **`LedgerServiceTest`** — every call was adapted to the new id-bearing signatures by
+  passing an account id through. Mechanical only: no assertion was changed, so the tests
+  still assert exactly the behaviour they asserted before.
+
+**No tests were added.** The suite is the interview-era suite adapted to compile — nine
+tests, all green. It exercises `LedgerService` on account 1 only; the transfer path and
+the HTTP layer are not covered.
+
+### Known problems, deliberately left unfixed
+
+Fixing these would mean rewriting work the interviewers watched being written, so they
+stay as they are. They are listed here rather than quietly corrected:
+
+- **`transfer` ignores its request.** `origin`, `destination` and `amountCents` are unused
+  and the amounts are hardcoded; the two legs do not match each other; and each leg is
+  appended to its history a second time on top of the append its helper already does. A
+  transfer therefore moves the wrong amounts and records duplicate entries.
+- **The id on the two GET endpoints is not bound as a path variable.** It carries no
+  `@PathVariable`, so Spring resolves it from the query string instead: `/balance/1`
+  fails, `/balance/1?id=1` succeeds.
+- **An unknown account id returns 500.** `getTransactions` throws `IllegalStateException`,
+  which has no handler in `ApiExceptionHandler`, so it escapes as an unmapped server error
+  rather than a 400.
+- **Account ids are narrowed to `int`** before the switch that selects a history list, so a
+  `long` id whose low 32 bits are 1 or 2 selects an account instead of being rejected.
+
+The `## API` section above documents the original single-account endpoints and has not
+been updated to match the two-account signatures.

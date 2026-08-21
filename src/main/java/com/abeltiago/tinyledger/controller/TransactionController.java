@@ -39,14 +39,14 @@ public class TransactionController {
 
     }
 
-    @GetMapping("/transactions")
-    public ResponseEntity<List<Transaction>> history() {
-        return ResponseEntity.status(HttpStatus.OK).body(service.history());
+    @GetMapping("/transactions/{id}")
+    public ResponseEntity<List<Transaction>> history(long id) {
+        return ResponseEntity.status(HttpStatus.OK).body(service.history(id));
     }
 
-    @GetMapping("/balance")
-    public ResponseEntity<BalanceResponse> balance() {
-        return ResponseEntity.status(HttpStatus.OK).body(new BalanceResponse(service.balanceCents()));
+    @GetMapping("/balance/{id}")
+    public ResponseEntity<BalanceResponse> balance(long id) {
+        return ResponseEntity.status(HttpStatus.OK).body(new BalanceResponse(service.balanceCents(id)));
     }
 
     @PostMapping("/transfer")

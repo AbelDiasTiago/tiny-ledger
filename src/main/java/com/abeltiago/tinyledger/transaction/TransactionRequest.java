@@ -1,4 +1,4 @@
 package com.abeltiago.tinyledger.transaction;
 
-public record TransactionRequest(TransactionType type, long amountCents) {
+public record TransactionRequest(long id, TransactionType type, long amountCents) {
 }

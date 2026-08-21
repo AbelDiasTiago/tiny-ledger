@@ -6,6 +6,7 @@ import com.abeltiago.tinyledger.service.LedgerService;
 import com.abeltiago.tinyledger.transaction.BalanceResponse;
 import com.abeltiago.tinyledger.transaction.Transaction;
 import com.abeltiago.tinyledger.transaction.TransactionRequest;
+import com.abeltiago.tinyledger.transaction.TransferRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -43,6 +44,14 @@ public class TransactionController {
     @GetMapping("/accounts/{id}/balance")
     public ResponseEntity<BalanceResponse> balance(@PathVariable long id) {
         return ResponseEntity.status(HttpStatus.OK).body(new BalanceResponse(service.balanceCents(id)));
+    }
+
+    @PostMapping("/transfers")
+    public ResponseEntity<List<Transaction>> transfers(@RequestBody TransferRequest request) {
+        List<Transaction> executedTransactions = service.transfer(request);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(executedTransactions);
+
     }
 
 }

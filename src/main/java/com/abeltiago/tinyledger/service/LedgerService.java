@@ -3,8 +3,10 @@ package com.abeltiago.tinyledger.service;
 import com.abeltiago.tinyledger.errors.AccountNotFoundException;
 import com.abeltiago.tinyledger.errors.InsufficientFundsException;
 import com.abeltiago.tinyledger.errors.InvalidAmountException;
+import com.abeltiago.tinyledger.errors.InvalidTransactionException;
 import com.abeltiago.tinyledger.transaction.Transaction;
 import com.abeltiago.tinyledger.transaction.TransactionType;
+import com.abeltiago.tinyledger.transaction.TransferRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -74,5 +76,16 @@ public class LedgerService {
             throw new AccountNotFoundException(id, "Account with id " + id + " does not exist");
         }
         return transactionList;
+    }
+
+    public synchronized List<Transaction> transfer(TransferRequest request) {
+        if(request.destination() == request.origin()){
+            throw new InvalidTransactionException("There can not be transfers between the same accounts");
+        }
+        List<Transaction> transactionsList = new ArrayList<>();
+        transactionsList.add(withdraw(request.origin(), request.amountCents()));
+        transactionsList.add(deposit(request.destination(), request.amountCents()));
+
+        return transactionsList;
     }
 }

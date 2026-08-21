@@ -3,8 +3,10 @@ package com.abeltiago.tinyledger.service;
 import com.abeltiago.tinyledger.errors.AccountNotFoundException;
 import com.abeltiago.tinyledger.errors.InsufficientFundsException;
 import com.abeltiago.tinyledger.errors.InvalidAmountException;
+import com.abeltiago.tinyledger.errors.InvalidTransactionException;
 import com.abeltiago.tinyledger.transaction.Transaction;
 import com.abeltiago.tinyledger.transaction.TransactionType;
+import com.abeltiago.tinyledger.transaction.TransferRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -18,6 +20,7 @@ class LedgerServiceTest {
 
 
     LedgerService service = new LedgerService();
+    TransferRequest transferRequest = new TransferRequest(1, 2, 500);
     long amount = 500L;
     long minorAmount = 200L;
     long zeroAmount = 0L;
@@ -116,4 +119,39 @@ class LedgerServiceTest {
     void BalanceOnNonExistingAccount(){
         assertThrows(AccountNotFoundException.class, ()-> service.balanceCents(999));
     }
+
+    @DisplayName("A non existing origin account from a transfer should return AccountNotFoundException")
+    @Test
+    void testIfInvalidOriginThrows(){
+        assertThrows(AccountNotFoundException.class, () -> service.transfer(transferRequest));
+    }
+
+    @DisplayName("A non existing destination account from a transfer should return create one")
+    @Test
+    void testIfInvalidDestinationIsCreated() {
+        service.deposit(1, amount);
+        service.transfer(transferRequest);
+        assertEquals(amount, service.balanceCents(2));
+    }
+
+    @DisplayName("A origin account with insufficient funds should throw InsufficientFundsException")
+    @Test
+    void testIfInsufficientFundsExceptionIsThrown() {
+        service.deposit(1, minorAmount);
+        service.deposit(2, minorAmount);
+        assertThrows(InsufficientFundsException.class, ()->service.transfer(transferRequest));
+        assertEquals(service.balanceCents(1), service.balanceCents(2));
+        assertEquals(1, service.history(1).size());
+        assertEquals(1, service.history(2).size());
+    }
+
+    @DisplayName("A origin account with sufficient funds creates a new destination account")
+    @Test
+    void testIfSufficientFundsCreatesNewAccount() {
+        service.deposit(1, amount);
+        service.deposit(2, minorAmount);
+        service.transfer(transferRequest);
+        assertEquals(700, service.balanceCents(2));
+    }
+
 }

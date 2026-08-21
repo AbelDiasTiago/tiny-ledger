@@ -8,10 +8,7 @@ import com.abeltiago.tinyledger.transaction.Transaction;
 import com.abeltiago.tinyledger.transaction.TransactionRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -24,28 +21,28 @@ public class TransactionController {
         this.service = service;
     }
 
-    @PostMapping("/transactions")
-    public ResponseEntity<Transaction> transaction(@RequestBody TransactionRequest request) {
+    @PostMapping("/accounts/{id}/transactions")
+    public ResponseEntity<Transaction> transaction(@PathVariable long id, @RequestBody TransactionRequest request) {
         if (request.type() == null) {
             throw new InvalidTransactionException("TransactionRequest type must not be null");
         }
         Transaction returnedTransaction = switch (request.type()) {
-            case DEPOSIT -> service.deposit(request.amountCents());
-            case WITHDRAWAL -> service.withdraw(request.amountCents());
+            case DEPOSIT -> service.deposit(id, request.amountCents());
+            case WITHDRAWAL -> service.withdraw(id, request.amountCents());
         };
 
         return ResponseEntity.status(HttpStatus.CREATED).body(returnedTransaction);
 
     }
 
-    @GetMapping("/transactions")
-    public ResponseEntity<List<Transaction>> history() {
-        return ResponseEntity.status(HttpStatus.OK).body(service.history());
+    @GetMapping("/accounts/{id}/transactions")
+    public ResponseEntity<List<Transaction>> history(@PathVariable long id) {
+        return ResponseEntity.status(HttpStatus.OK).body(service.history(id));
     }
 
-    @GetMapping("/balance")
-    public ResponseEntity<BalanceResponse> balance() {
-        return ResponseEntity.status(HttpStatus.OK).body(new BalanceResponse(service.balanceCents()));
+    @GetMapping("/accounts/{id}/balance")
+    public ResponseEntity<BalanceResponse> balance(@PathVariable long id) {
+        return ResponseEntity.status(HttpStatus.OK).body(new BalanceResponse(service.balanceCents(id)));
     }
 
 }

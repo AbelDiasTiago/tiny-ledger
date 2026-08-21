@@ -1,5 +1,6 @@
 package com.abeltiago.tinyledger.service;
 
+import com.abeltiago.tinyledger.errors.AccountNotFoundException;
 import com.abeltiago.tinyledger.errors.InsufficientFundsException;
 import com.abeltiago.tinyledger.errors.InvalidAmountException;
 import com.abeltiago.tinyledger.transaction.Transaction;
@@ -18,59 +19,64 @@ class LedgerServiceTest {
 
     LedgerService service = new LedgerService();
     long amount = 500L;
+    long minorAmount = 200L;
     long zeroAmount = 0L;
     long negativeAmount = -1L;
+    long id = 1L;
 
     @DisplayName("Deposit should increase balance by respective amount")
     @Test
     void testDepositIncreaseAmount() {
-        service.deposit(amount);
+        service.deposit(id, amount);
 
-        assertEquals(amount, service.balanceCents());
+        assertEquals(amount, service.balanceCents(id));
     }
 
     @DisplayName("Balance should not throw exception when at zero")
     @Test
     void testBalanceZero() {
-        assertEquals(0, service.balanceCents());    }
+        service.deposit(id, amount);
+        service.withdraw(id, amount);
+        assertEquals(0, service.balanceCents(id));    }
 
     @DisplayName("Withdraw to zero does not throw exception")
     @Test
     void testWithdrawToZero(){
-        service.deposit(amount);
+        service.deposit(id, amount);
 
-        assertDoesNotThrow(()->service.withdraw(amount));
-        assertEquals(zeroAmount, service.balanceCents());
+        assertDoesNotThrow(()->service.withdraw(id, amount));
+        assertEquals(zeroAmount, service.balanceCents(id));
     }
 
     @DisplayName("Overdraft throws InsufficientFundsException")
     @Test
     void testOverdraft(){
-        assertThrows(InsufficientFundsException.class, ()-> service.withdraw(amount));
-        assertEquals(0, service.history().size());
+        service.deposit(id, minorAmount);
+        assertThrows(InsufficientFundsException.class, ()-> service.withdraw(id, amount));
+        assertEquals(1, service.history(id).size());
     }
 
     @DisplayName("Zero Or Negative Amounts throws InvalidAmountException")
     @Test
     void testZeroOrNegativeAmount(){
-        assertThrows(InvalidAmountException.class, ()-> service.deposit(zeroAmount));
-        assertThrows(InvalidAmountException.class, ()-> service.deposit(negativeAmount));
-        assertThrows(InvalidAmountException.class, ()-> service.withdraw(zeroAmount));
-        assertThrows(InvalidAmountException.class, ()-> service.withdraw(negativeAmount));
+        assertThrows(InvalidAmountException.class, ()-> service.deposit(id, zeroAmount));
+        assertThrows(InvalidAmountException.class, ()-> service.deposit(id, negativeAmount));
+        assertThrows(InvalidAmountException.class, ()-> service.withdraw(id, zeroAmount));
+        assertThrows(InvalidAmountException.class, ()-> service.withdraw(id, negativeAmount));
     }
 
     @DisplayName("Deposit, Withdraw, Deposit sequence has correct Balance and order")
     @Test
     void testSequenceBalance(){
         List<Transaction> historyOperationOrder = new ArrayList<>();
-        historyOperationOrder.add(service.deposit(amount));
-        assertEquals(amount, service.balanceCents());
-        historyOperationOrder.add(service.withdraw(amount));
-        assertEquals(zeroAmount, service.balanceCents());
-        historyOperationOrder.add(service.deposit(amount));
-        assertEquals(amount, service.balanceCents());
-        assertEquals(3, service.history().size());
-        List<Transaction> history = service.history();
+        historyOperationOrder.add(service.deposit(id, amount));
+        assertEquals(amount, service.balanceCents(id));
+        historyOperationOrder.add(service.withdraw(id, amount));
+        assertEquals(zeroAmount, service.balanceCents(id));
+        historyOperationOrder.add(service.deposit(id, amount));
+        assertEquals(amount, service.balanceCents(id));
+        assertEquals(3, service.history(id).size());
+        List<Transaction> history = service.history(id);
         assertEquals(historyOperationOrder.get(0).type(), history.get(0).type());
         assertEquals(historyOperationOrder.get(1).type(), history.get(1).type());
         assertEquals(historyOperationOrder.get(2).type(), history.get(2).type());
@@ -79,17 +85,35 @@ class LedgerServiceTest {
     @DisplayName("History returns a copy that can't be mutated")
     @Test
     void testHistoryCopy(){
-        service.deposit(amount);
-        List<Transaction> history = service.history();
+        service.deposit(id, amount);
+        List<Transaction> history = service.history(id);
         assertThrows(UnsupportedOperationException.class, () -> history.
             add(new Transaction(1, TransactionType.DEPOSIT, amount, Instant.now())));
     }
     @DisplayName("Ids should increment across transactions")
     @Test
     void testCounter(){
-        Transaction deposit = service.deposit(amount);
+        Transaction deposit = service.deposit(id, amount);
         assertEquals(1, deposit.id());
-        Transaction secondDeposit = service.deposit(amount);
+        Transaction secondDeposit = service.deposit(id, amount);
         assertEquals(2, secondDeposit.id());
+    }
+
+    @DisplayName("Withdrwal on a account that does not exist should return AccountNotFoundException")
+    @Test
+    void withdrawalOnNonExistingAccount(){
+        assertThrows(AccountNotFoundException.class, ()-> service.withdraw(999, 500));
+    }
+
+    @DisplayName("History on a account that does not exist should return AccountNotFoundException")
+    @Test
+    void historyOnNonExistingAccount(){
+        assertThrows(AccountNotFoundException.class, ()-> service.history(999));
+    }
+
+    @DisplayName("Balance on a account that does not exist should return AccountNotFoundException")
+    @Test
+    void BalanceOnNonExistingAccount(){
+        assertThrows(AccountNotFoundException.class, ()-> service.balanceCents(999));
     }
 }

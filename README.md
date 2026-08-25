@@ -74,3 +74,10 @@ Returns the full append-only history, oldest first.
 - Integration tests: the domain rules are unit tested, and every endpoint
   was exercised end to end by hand.
   A MockMvc happy path test would be the next test to write.
+
+## A note on branches
+
+`main` carries the extended version: multiple accounts, atomic transfers, and an
+integration test at the HTTP seam. The `interview-extension` branch preserves,
+unedited, the extension written live during a timed interview — kept as-is because
+code written under a clock is its own kind of record.
